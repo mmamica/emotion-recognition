@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import butter, lfilter, welch
+from scipy.signal import welch
 import math as m
 
 def cart2sph(x, y, z):
@@ -13,31 +13,26 @@ def cart2sph(x, y, z):
 def pol2cart(theta, rho):
     return rho * m.cos(theta), rho * m.sin(theta)
 
-def butter_bandpass(lowcut, highcut, fs, order=5):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return b, a
+def psd_bands(data, sf):
+    win = 4 * sf
+    freqs, psd = welch(data, sf, nperseg=win)
 
-def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
-    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
+    # Define lower and upper limits
+    low_theta, high_theta = 4.0, 8.0
+    low_alpha, high_alpha = 8.0, 13.0
+    low_beta, high_beta = 13.0, 30.0
+    low_gamma, high_gamma = 30.0, 40.0
 
-def frequency_bands(data):
-    fft = np.fft.fft(data)
-    cfft = fft*np.conjugate(fft)
-    alpha = butter_bandpass_filter(cfft[:], 8.1, 13.0, 128)
-    beta = butter_bandpass_filter(cfft[:], 13.1, 30.0, 128)
-    gamma = butter_bandpass_filter(cfft[:], 30.1, 40, 128)
-    theta = butter_bandpass_filter(cfft[:], 4.1, 8.0, 128)
-    return alpha, beta, gamma, theta
+    # Find intersecting values in frequency vector
+    idx_theta = np.logical_and(freqs > low_theta, freqs <= high_theta)
+    idx_alpha = np.logical_and(freqs > low_alpha, freqs <= high_alpha)
+    idx_beta = np.logical_and(freqs > low_beta, freqs <= high_beta)
+    idx_gamma = np.logical_and(freqs > low_gamma, freqs <= high_gamma)
 
-def fft_to_psd(data,fs):
-    l = len(data)
-    return (1/(l*fs))*np.abs(data)*np.abs(data)
+    # Take averaged psds
+    psd_theta = np.average(psd[idx_theta])
+    psd_alpha = np.average(psd[idx_alpha])
+    psd_beta = np.average(psd[idx_beta])
+    psd_gamma = np.average(psd[idx_gamma])
 
-def average(data):
-    l = len(data)
-    return np.sum(data)/l
+    return psd_theta, psd_alpha, psd_beta, psd_gamma
