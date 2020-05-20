@@ -1,5 +1,5 @@
+import numpy as np
 from scipy import signal, fft
-
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
@@ -24,3 +24,6 @@ def extract_bands(data, fs):
     alpha = butter_bandpass_filter(fft_data, alpha_band[0], alpha_band[1], fs)
     beta = butter_bandpass_filter(fft_data, beta_band[0], beta_band[1], fs)
     return theta, alpha, beta
+
+def add_data_channels(data, sample, output):
+    return np.hstack((output, data[sample][0].reshape(8064,1), data[sample][2:6].reshape(8064,4), data[sample][16].reshape(8064,1), data[sample][18:23].reshape(8064,5)))
