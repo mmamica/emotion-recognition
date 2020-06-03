@@ -1,19 +1,42 @@
 import numpy as np
 from scipy.signal import welch, periodogram
-import math as m
-
-def cart2sph(x, y, z):
-    x2_y2 = x**2 + y**2
-    r = m.sqrt(x2_y2 + z**2)                    # r
-    elev = m.atan2(z, m.sqrt(x2_y2))            # Elevation
-    az = m.atan2(y, x)                          # Azimuth
-    return r, elev, az
 
 
-def pol2cart(theta, rho):
-    return rho * m.cos(theta), rho * m.sin(theta)
+def count_azimuth(center_point, point):
+    '''
+    calculate azimuth of given points
+    :param center_point: relative, center point
+    :param point: point for which azimuth is calculated
+    :return: azimuth value
+    '''
+    long_center, lat_center = center_point[0], center_point[1]
+    long, lat = point[0], point[1]
+    if(long_center == long and lat_center == lat):
+        return 0
+    tan_azimuth = (np.cos(lat)*np.sin(long - long_center))/(np.cos(lat_center)*np.sin(lat) - np.sin(lat_center)*np.cos(lat)*np.cos(long-long_center))
+    return np.arctan(tan_azimuth)
+
+
+def count_distance(center_point, point):
+    '''
+    calculate distance between points
+    :param center_point: relative, center point
+    :param point: point for which distance is calculated
+    :return:
+    '''
+    long_center, lat_center = center_point[0], center_point[1]
+    long, lat = point[0], point[1]
+    cos_distance = np.sin(lat_center)*np.sin(lat) + np.cos(lat_center)*np.cos(lat)*np.cos(long-long_center)
+    return np.arccos(cos_distance)
+
 
 def psd_bands_welch(data, sf):
+    '''
+    extract alpha, beta, theta, gamma bands and calculate average power spectral density for each band with Welch method
+    :param data: EEG data
+    :param sf: frequency sampling
+    :return: average PSDs for all bands
+    '''
     win = 0.5 * sf
     freqs, psd = welch(data, sf, nperseg=win)
 
@@ -37,7 +60,14 @@ def psd_bands_welch(data, sf):
 
     return psd_theta, psd_alpha, psd_beta, psd_gamma
 
+
 def psd_bands_periodogram(data, sf):
+    '''
+    extract alpha, beta, theta, gamma bands and calculate average power spectral density for each band with periodogram
+    :param data: EEG data
+    :param sf: frequency sampling
+    :return: average PSDs for all bands
+    '''
     freqs, psd = periodogram(data, sf)
 
     # Define lower and upper limits
